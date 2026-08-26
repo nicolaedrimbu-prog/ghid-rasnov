@@ -74,7 +74,7 @@
 // ---------- Apartment identity + visit counter (lightweight, no backend) ----------
 const params = new URLSearchParams(window.location.search);
 const apt = params.get('apt') || 'general';
-const APT_NAMES = { ap5: 'Apartamentul 5 — Beautiful views near the Fortress', ap12: 'Apartamentul 12 — Peacefull and inviting' };
+const APT_NAMES = { ap5: 'Apartamentul 5 — Beautiful views near the Fortress', ap12: 'Apartamentul 12 — Peaceful and inviting' };
 document.getElementById('welcome').textContent = APT_NAMES[apt] ? `Bun venit — ${APT_NAMES[apt]}` : '';
 
 // Free, no-signup hit counter (community revival of countapi.xyz). Best-effort —
@@ -88,6 +88,7 @@ const CATS = {
   wellness:  { label: "Wellness",     color: "#57727C" },
   gastro:    { label: "Gastronomie",  color: "#9C4536" },
   livrare:   { label: "Livrare",      color: "#B9812F" },
+  facilitare:{ label: "Facilitare",   color: "#7A6C5D" },
 };
 
 const PLACES = [
@@ -148,6 +149,24 @@ const PLACES = [
   { name: "Sam's Pizza Râșnov", cat: "livrare", icon: "🍕",
     desc: "Pizza foarte bine cotată local, atmosferă modernă, recenzii constant excelente.",
     website: null, mapsId: "ChIJVRc7cxhFs0ARWrTwBCsfhX0", phone: "+40 758 880 503" },
+  { name: "Taxă acces Parcul Național Piatra Craiului", cat: "facilitare", icon: "🎫",
+    desc: "Bilet obligatoriu pentru trasee în parc (5 lei/7 zile) — cumperi online, ca să nu pierzi timp la automat.",
+    website: "https://www.pcrai.ro/bilete", mapsId: null, phone: null },
+  { name: "Cetatea Râșnov", cat: "cultura", icon: "🏯",
+    desc: "Cetate țărănească medievală pe deal, cu vedere panoramică — curtea e vizitabilă (10 lei), unele zone interioare pot fi în renovare.",
+    website: null, mapsId: "ChIJ0fk_EAxFs0ARiA5NhYGZXIY", phone: null },
+  { name: "Palincaria Transilvania", cat: "gastro", icon: "🥃",
+    desc: "Distilerie mică, de familie — tur + degustare de palincă/țuică artizanală, fără zahăr adăugat.",
+    website: null, mapsId: "ChIJ6TxD38FFs0ARiCeNb9eWVhM", phone: "+40 744 330 889" },
+  { name: "Sub Cetate Sergiana", cat: "gastro", icon: "🍲",
+    desc: "Bucătărie tradițională românească, terasă mare, aproape de Cetatea Râșnov.",
+    website: null, mapsId: "ChIJSyrTWm5Fs0AR6QowMPTBwSM", phone: "+40 721 200 017" },
+  { name: "Rădsor", cat: "gastro", icon: "🍽️",
+    desc: "Restaurant-hotel cu bucătărie românească, cofetărie și înghețată artizanală — bun pentru popas oricând.",
+    website: null, mapsId: "ChIJNeIVaqNFs0AR4kqECyWdwik", phone: "+40 774 467 136" },
+  { name: "Magic Parc Râșnov", cat: "aventura", icon: "🎪",
+    desc: "Sat tematic pentru copii — vânătoare de comori, spectacol de magie, castel gonflabil, mini-ATV.",
+    website: null, mapsId: "ChIJ22qHcMxFs0ARQbVjT0Hd0jw", phone: "+40 775 300 500" },
 ];
 
 function mapsUrl(p){ return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' Rasnov Brasov')}&query_place_id=${p.mapsId}`; }
@@ -168,7 +187,7 @@ function render(filter){
         <p class="desc">${p.desc}</p>
         <div class="actions">
           ${p.website ? `<a class="btn" href="${p.website}" target="_blank" rel="noopener">🌐 Website</a>` : ''}
-          <a class="btn primary" href="${mapsUrl(p)}" target="_blank" rel="noopener">📍 Google Maps</a>
+          ${p.mapsId ? `<a class="btn primary" href="${mapsUrl(p)}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}
           ${p.phone ? `<a class="btn phone" href="tel:${p.phone.replace(/\s/g,'')}">📞 ${p.phone}</a>` : ''}
         </div>
       </div>
