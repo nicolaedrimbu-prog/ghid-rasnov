@@ -74,7 +74,7 @@
 // ---------- Apartment identity + visit counter (lightweight, no backend) ----------
 const params = new URLSearchParams(window.location.search);
 const apt = params.get('apt') || 'general';
-const APT_NAMES = { ap5: 'Apartamentul 5 — Beautifull views near the Fortress', ap12: 'Apartamentul 12 — Pacefull and inviting' };
+const APT_NAMES = { ap5: 'Apartamentul 5 — Beautiful views near the Fortress', ap12: 'Apartamentul 12 — Peacefull and inviting' };
 document.getElementById('welcome').textContent = APT_NAMES[apt] ? `Bun venit — ${APT_NAMES[apt]}` : '';
 
 // Free, no-signup hit counter (community revival of countapi.xyz). Best-effort —
