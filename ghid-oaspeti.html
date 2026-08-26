@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ghidul gazdei — Râșnov</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EAE3D3; --surface:#FBF8F1; --ink:#20291F; --ink-soft:#5B6459;
+    --spruce:#3C5B44; --spruce-deep:#26382C; --amber:#B9812F; --amber-deep:#8F6222;
+    --slate:#57727C; --brick:#9C4536; --line:rgba(32,41,31,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter', system-ui, sans-serif;}
+  .serif{font-family:'Fraunces', Georgia, serif;}
+
+  header{padding:32px 20px 20px; max-width:960px; margin:0 auto;}
+  .eyebrow{display:flex; align-items:center; gap:8px; color:var(--amber-deep);
+    font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; margin-bottom:6px;}
+  h1{font-size:28px; font-weight:600; margin:0 0 4px; line-height:1.15;}
+  #welcome{font-size:14px; color:var(--spruce); font-weight:600; margin:0 0 8px;}
+  header p{font-size:14px; color:var(--ink-soft); max-width:480px; margin:0;}
+
+  nav{max-width:960px; margin:0 auto; padding:0 20px 16px; display:flex; gap:8px; flex-wrap:wrap;}
+  .chip{border:1px solid var(--line); background:var(--surface); color:var(--ink-soft);
+    padding:7px 14px; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; transition:.15s;}
+  .chip.active{background:var(--spruce); color:#fff; border-color:var(--spruce);}
+
+  main{max-width:960px; margin:0 auto; padding:8px 20px 60px;}
+  .grid{display:grid; grid-template-columns:1fr; gap:14px;}
+  @media(min-width:640px){ .grid{grid-template-columns:1fr 1fr;} }
+
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:18px; overflow:hidden; display:flex; flex-direction:column;}
+  .card-top{height:104px; display:flex; align-items:center; justify-content:center; font-size:44px;}
+  .card-body{padding:16px;}
+  .card-title{font-size:16px; font-weight:600; margin:0; line-height:1.25;}
+  .cat-badge{display:inline-block; font-size:11px; font-weight:500; padding:3px 9px; border-radius:999px; margin-top:6px;}
+  .desc{font-size:13px; color:var(--ink-soft); margin:10px 0 0; line-height:1.45;}
+
+  .actions{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;}
+  .btn{font-size:12px; font-weight:500; padding:7px 12px; border-radius:999px; text-decoration:none;
+    display:inline-flex; align-items:center; gap:5px; border:1px solid var(--line); color:var(--ink);}
+  .btn.primary{background:var(--spruce-deep); color:#fff; border-color:var(--spruce-deep);}
+  .btn.phone{background:transparent; color:var(--slate); border-color:var(--slate);}
+
+  footer{max-width:960px; margin:0 auto; padding:0 20px 40px; color:var(--ink-soft); font-size:12px;}
+  footer .box{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">🔥 Ghid de oaspeți · Râșnov</div>
+  <h1 class="serif">Recomandările gazdei</h1>
+  <p id="welcome"></p>
+  <p>O selecție de afaceri locale — activități, cultură, wellness și gastronomie, alese pentru sejurul tău.</p>
+</header>
+
+<nav id="filters"></nav>
+
+<main>
+  <div class="grid" id="grid"></div>
+</main>
+
+<footer>
+  <div class="box">
+    Ai nevoie de o recomandare care nu e în listă? Scrie-ne — actualizăm ghidul constant.
+  </div>
+</footer>
+
+<script>
+// ---------- Apartment identity + visit counter (lightweight, no backend) ----------
+const params = new URLSearchParams(window.location.search);
+const apt = params.get('apt') || 'general';
+const APT_NAMES = { ap5: 'Apartamentul 5 — Beautifull views near the Fortress', ap12: 'Apartamentul 12 — Pacefull and inviting' };
+document.getElementById('welcome').textContent = APT_NAMES[apt] ? `Bun venit — ${APT_NAMES[apt]}` : '';
+
+// Free, no-signup hit counter (community revival of countapi.xyz). Best-effort —
+// if the service is ever down, the page still works fully, just without the count.
+fetch(`https://countapi.mileshilliard.com/api/v1/hit/ghid-rasnov-apartamente/${apt}`).catch(()=>{});
+
+// ---------- Data ----------
+const CATS = {
+  aventura:  { label: "Aventură",     color: "#3C5B44" },
+  cultura:   { label: "Cultură",      color: "#8F6222" },
+  wellness:  { label: "Wellness",     color: "#57727C" },
+  gastro:    { label: "Gastronomie",  color: "#9C4536" },
+  livrare:   { label: "Livrare",      color: "#B9812F" },
+};
+
+const PLACES = [
+  { name: "Dino Parc Râșnov", cat: "aventura", icon: "🦕",
+    desc: "Cel mai mare parc cu dinozauri din SE Europei, în pădure lângă Cetatea Râșnov.",
+    website: "https://dinoparc.ro", mapsId: "ChIJeb9jX69Fs0ARAEsx7MiVBHE", phone: "+40 741 208 703" },
+  { name: "Peștera Valea Cetății", cat: "aventura", icon: "🕳️",
+    desc: "Tur ghidat scurt printr-o peșteră aproape de Cetatea Râșnov, potrivit pentru toată familia.",
+    website: null, mapsId: "ChIJTTT7-05Es0ARRM9ow7gv13I", phone: "+40 724 345 898" },
+  { name: "Wolf Park Adventure", cat: "aventura", icon: "🌲",
+    desc: "Parc de aventură suspendat în copaci, la Zărnești — trasee și tiroliene pentru toate vârstele.",
+    website: "https://www.wolfpark.ro", mapsId: "ChIJIRbJQSVJs0ARbyeYeoQ_fTI", phone: "+40 786 226 500" },
+  { name: "Libearty Bear Sanctuary", cat: "aventura", icon: "🐻",
+    desc: "Cel mai mare sanctuar de urși din Europa — tur ghidat emoționant, în natură, la Zărnești.",
+    website: "https://millionsoffriends.org", mapsId: "ChIJ2-Spxj5Ps0ARJoGtF3BfdpU", phone: "+40 731 334 791" },
+  { name: "Centrul de Echitație Diana", cat: "aventura", icon: "🐴",
+    desc: "Plimbări cu calul prin pădure și poieni — pentru începători și copii.",
+    website: null, mapsId: "ChIJxSjBhqJFs0ARQFFSgyVoVhw", phone: "+40 268 230 168" },
+  { name: "Închirieri ATV / Buggy Moieciu", cat: "aventura", icon: "🏍️",
+    desc: "Tur ATV/buggy cu ghid pe trasee montane, potrivit și pentru începători.",
+    website: null, mapsId: "ChIJoauCVZw5s0ARc3cJYcJfAJE", phone: "+40 746 693 961" },
+  { name: "Interski Poiana Brașov", cat: "aventura", icon: "⛷️",
+    desc: "Școală de ski & snowboard + închirieri echipament, lângă gondolă.",
+    website: "https://interski-romania.ro", mapsId: "ChIJC8MMUH1Ds0ARQxk10Zx1p7M", phone: "+40 745 012 887" },
+  { name: "R&J Ski School", cat: "aventura", icon: "🏂",
+    desc: "Școală de ski & bootfitting în Poiana Brașov, foarte apreciată pentru copii.",
+    website: null, mapsId: "ChIJEXOKeJ1Es0ARVIdZc1ZTmIU", phone: "+40 722 275 627" },
+  { name: "Castelul Bran", cat: "cultura", icon: "🏰",
+    desc: "Obiectivul istoric emblematic al zonei — reședința legendei lui Dracula.",
+    website: "https://www.bran-castle.com", mapsId: "ChIJMd4VpOVHs0ARf6sh2ZInks8", phone: "+40 268 237 700" },
+  { name: "Ceaihana — Baie rusească", cat: "wellness", icon: "🔥",
+    desc: "Ritual tradițional de saună slavă (banya), cu maestru de saună.",
+    website: null, mapsId: "ChIJ9bhCGwBFs0ARK8omwPEe4IE", phone: "+40 744 318 004" },
+  { name: "Masaj Râșnov — Petru", cat: "wellness", icon: "💆",
+    desc: "Masaj terapeutic la domiciliu — vine chiar în apartament, la cerere.",
+    website: null, mapsId: "ChIJSd-Mz_RFs0ARlKEr3X_Jj5M", phone: "+40 759 395 367" },
+  { name: "Wolkendorf Bio Hotel & Spa", cat: "wellness", icon: "♨️",
+    desc: "Spa cu hammam, jacuzzi exterior și bazin cu apă sărată, la ~15 min de Râșnov.",
+    website: null, mapsId: "ChIJ4xTtkLBPs0ARICCkm7r4evg", phone: "+40 727 316 091" },
+  { name: "Aquatic Paradise Brașov", cat: "wellness", icon: "🌊",
+    desc: "Cel mai mare parc acvatic din zonă — tobogane, piscine, saune.",
+    website: null, mapsId: "ChIJ6y40lcdbs0ARy-oNNLDVM8U", phone: "+40 268 440 070" },
+  { name: "La Promenadă Restaurant", cat: "gastro", icon: "🍽️",
+    desc: "Restaurant family-friendly, cu loc de joacă interior/exterior și livrare.",
+    website: null, mapsId: "ChIJ17-gSadFs0ARbdg3PY0lYIo", phone: "+40 371 233 771" },
+  { name: "La Noi", cat: "gastro", icon: "🍲",
+    desc: "Bucătărie tradițională autentică, atmosferă de casă la munte — necesită anunț prealabil.",
+    website: null, mapsId: "ChIJQ3l0JRxEs0ARzyOLQ_P9XcY", phone: "+40 722 228 204" },
+  { name: "Berăria RAO", cat: "gastro", icon: "🍺",
+    desc: "Local casual, prețuri accesibile, mix de bucătărie românească și internațională.",
+    website: null, mapsId: "ChIJSyrTWm5Fs0AR6QowMPTBwSM", phone: "+40 755 310 402" },
+  { name: "Punct gastronomic local", cat: "gastro", icon: "🐟",
+    desc: "Păstrăv proaspăt la grătar/prăjit/afumat, pe malul apei — punct gastronomic autentic.",
+    website: null, mapsId: "ChIJe8YlkCBHs0ARsgoQrRpakbE", phone: "+40 747 869 357" },
+  { name: "Bada Bing — livrare pizza", cat: "livrare", icon: "🍕",
+    desc: "Livrare rapidă, inclusiv spre Zărnești — bun pentru prima seară de cazare.",
+    website: null, mapsId: "ChIJ5ya-CQFFs0ARSA4YOfF1rp8", phone: "+40 754 472 505" },
+  { name: "Sam's Pizza Râșnov", cat: "livrare", icon: "🍕",
+    desc: "Pizza foarte bine cotată local, atmosferă modernă, recenzii constant excelente.",
+    website: null, mapsId: "ChIJVRc7cxhFs0ARWrTwBCsfhX0", phone: "+40 758 880 503" },
+];
+
+function mapsUrl(p){ return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' Rasnov Brasov')}&query_place_id=${p.mapsId}`; }
+
+function render(filter){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  const list = filter === 'toate' ? PLACES : PLACES.filter(p => p.cat === filter);
+  list.forEach(p => {
+    const cat = CATS[p.cat];
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-top" style="background:${cat.color}1A;">${p.icon}</div>
+      <div class="card-body">
+        <p class="card-title serif">${p.name}</p>
+        <span class="cat-badge" style="background:${cat.color}1A; color:${cat.color};">${cat.label}</span>
+        <p class="desc">${p.desc}</p>
+        <div class="actions">
+          ${p.website ? `<a class="btn" href="${p.website}" target="_blank" rel="noopener">🌐 Website</a>` : ''}
+          <a class="btn primary" href="${mapsUrl(p)}" target="_blank" rel="noopener">📍 Google Maps</a>
+          ${p.phone ? `<a class="btn phone" href="tel:${p.phone.replace(/\s/g,'')}">📞 ${p.phone}</a>` : ''}
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function renderFilters(){
+  const nav = document.getElementById('filters');
+  const cats = ['toate', ...Object.keys(CATS)];
+  cats.forEach(key => {
+    const btn = document.createElement('button');
+    btn.className = 'chip' + (key === 'toate' ? ' active' : '');
+    btn.textContent = key === 'toate' ? 'Toate' : CATS[key].label;
+    btn.onclick = () => {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      render(key);
+    };
+    nav.appendChild(btn);
+  });
+}
+
+renderFilters();
+render('toate');
+</script>
+</body>
+</html>
