@@ -1,1 +1,88 @@
-https://claude.ai/api/organizations/57bd10cc-8314-4700-853b-4edee5fc4725/conversations/7f9ce893-2422-474f-a41e-5677b4ba32dc/wiggle/download-file?path=%2Fmnt%2Fuser-data%2Foutputs%2Fstatistici-ghid.html
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statistici — Ghidul gazdei</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#EAE3D3; --surface:#FBF8F1; --ink:#20291F; --ink-soft:#5B6459;
+    --spruce:#3C5B44; --spruce-deep:#26382C; --amber:#B9812F; --line:rgba(32,41,31,0.14); }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter', system-ui, sans-serif; padding:32px 20px;}
+  .wrap{max-width:520px; margin:0 auto;}
+  h1{font-family:'Fraunces', Georgia, serif; font-size:24px; margin:0 0 4px;}
+  p.lead{color:var(--ink-soft); font-size:14px; margin:0 0 24px;}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:18px 20px; margin-bottom:12px;
+    display:flex; align-items:center; justify-content:space-between;}
+  .card .name{font-weight:600; font-size:15px;}
+  .card .sub{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+  .count{font-family:'JetBrains Mono', monospace; font-size:28px; font-weight:600; color:var(--spruce-deep);}
+  .total{background:var(--spruce-deep); color:#fff; border-radius:16px; padding:18px 20px; margin-top:20px;
+    display:flex; align-items:center; justify-content:space-between;}
+  .total .count{color:#fff;}
+  .note{font-size:12px; color:var(--ink-soft); margin-top:20px; line-height:1.5;}
+  .refresh{margin-top:16px; font-size:13px; background:var(--spruce); color:#fff; border:none;
+    padding:9px 16px; border-radius:999px; cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Accesări ghid — pe apartament</h1>
+  <p class="lead">Numărătoare simplă, actualizată live la fiecare scanare a codului QR.</p>
+
+  <div class="card">
+    <div>
+      <div class="name">Apartamentul 5</div>
+      <div class="sub">Beautiful views near the Fortress</div>
+    </div>
+    <div class="count" id="c-ap5">—</div>
+  </div>
+
+  <div class="card">
+    <div>
+      <div class="name">Apartamentul 12</div>
+      <div class="sub">Peaceful and inviting</div>
+    </div>
+    <div class="count" id="c-ap12">—</div>
+  </div>
+
+  <div class="total">
+    <div>Total accesări</div>
+    <div class="count" id="c-total">—</div>
+  </div>
+
+  <button class="refresh" onclick="loadCounts()">Actualizează</button>
+
+  <p class="note">
+    Contorul folosește un serviciu gratuit, fără cont (countapi). E suficient pentru a vedea tendința generală,
+    dar nu oferă detalii precum ora accesării sau tipul de dispozitiv. Pentru statistici mai avansate
+    (grafic în timp, provenență, ce recomandare a fost accesată), varianta următoare ar trebui să adauge
+    Google Analytics sau Plausible pe pagina ghidului.
+  </p>
+</div>
+
+<script>
+async function getCount(key){
+  try{
+    const res = await fetch(`https://countapi.mileshilliard.com/api/v1/get/ghid-rasnov-apartamente/${key}`);
+    const data = await res.json();
+    return data.value ?? 0;
+  }catch(e){ return null; }
+}
+
+async function loadCounts(){
+  document.getElementById('c-ap5').textContent = '…';
+  document.getElementById('c-ap12').textContent = '…';
+  document.getElementById('c-total').textContent = '…';
+
+  const [ap5, ap12] = await Promise.all([getCount('ap5'), getCount('ap12')]);
+  document.getElementById('c-ap5').textContent = ap5 ?? 'N/A';
+  document.getElementById('c-ap12').textContent = ap12 ?? 'N/A';
+  document.getElementById('c-total').textContent = (ap5 !== null && ap12 !== null) ? (ap5 + ap12) : 'N/A';
+}
+
+loadCounts();
+</script>
+</body>
+</html>
