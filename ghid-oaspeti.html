@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
   :root{
     --bg:#EAE3D3; --surface:#FBF8F1; --ink:#20291F; --ink-soft:#5B6459;
@@ -45,8 +46,10 @@
     display:inline-flex; align-items:center; gap:5px; border:1px solid var(--line); color:var(--ink);}
   .btn.primary{background:var(--spruce-deep); color:#fff; border-color:var(--spruce-deep);}
   .btn.phone{background:transparent; color:var(--slate); border-color:var(--slate);}
-  .btn.social{padding:7px 10px; font-size:14px; border-color:var(--line);}
+  .btn.social{padding:7px 10px; font-size:14px; border-color:var(--line); width:32px; height:32px; justify-content:center;}
   .btn.social.inactive{opacity:0.32; cursor:default; filter:grayscale(1);}
+  .btn.social.facebook{color:#1877F2; border-color:#1877F220;}
+  .btn.social.instagram{color:#E1306C; border-color:#E1306C20;}
 
   footer{max-width:960px; margin:0 auto; padding:0 20px 40px; color:var(--ink-soft); font-size:12px;}
   footer .box{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px;}
@@ -173,11 +176,11 @@ function render(filter){
           ${p.mapsId ? `<a class="btn primary" href="${mapsUrl(p)}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}
           ${p.phone ? `<a class="btn phone" href="tel:${p.phone.replace(/\s/g,'')}">📞 ${p.phone}</a>` : ''}
           ${p.facebook
-            ? `<a class="btn social" href="${p.facebook}" target="_blank" rel="noopener" title="Facebook">📘</a>`
-            : `<span class="btn social inactive" title="Fără pagină Facebook">📘</span>`}
+            ? `<a class="btn social facebook" href="${p.facebook}" target="_blank" rel="noopener" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>`
+            : `<span class="btn social inactive" title="Fără pagină Facebook"><i class="fa-brands fa-facebook-f"></i></span>`}
           ${p.instagram
-            ? `<a class="btn social" href="${p.instagram}" target="_blank" rel="noopener" title="Instagram">📷</a>`
-            : `<span class="btn social inactive" title="Fără cont Instagram">📷</span>`}
+            ? `<a class="btn social instagram" href="${p.instagram}" target="_blank" rel="noopener" title="Instagram"><i class="fa-brands fa-instagram"></i></a>`
+            : `<span class="btn social inactive" title="Fără cont Instagram"><i class="fa-brands fa-instagram"></i></span>`}
         </div>
       </div>
     `;
