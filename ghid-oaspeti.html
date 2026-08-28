@@ -6,6 +6,7 @@
 <title>Ghidul gazdei — Râșnov</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
   :root{
     --bg:#EAE3D3; --surface:#FBF8F1; --ink:#20291F; --ink-soft:#5B6459;
@@ -44,6 +45,8 @@
     display:inline-flex; align-items:center; gap:5px; border:1px solid var(--line); color:var(--ink);}
   .btn.primary{background:var(--spruce-deep); color:#fff; border-color:var(--spruce-deep);}
   .btn.phone{background:transparent; color:var(--slate); border-color:var(--slate);}
+  .btn.social{padding:7px 10px; font-size:14px; border-color:var(--line);}
+  .btn.social.inactive{opacity:0.32; cursor:default; filter:grayscale(1);}
 
   footer{max-width:960px; margin:0 auto; padding:0 20px 40px; color:var(--ink-soft); font-size:12px;}
   footer .box{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px;}
@@ -61,7 +64,9 @@
 <nav id="filters"></nav>
 
 <main>
-  <div class="grid" id="grid"></div>
+  <div class="grid" id="grid">
+    <p style="color:var(--ink-soft); font-size:13px; grid-column:1/-1;">Se încarcă recomandările…</p>
+  </div>
 </main>
 
 <footer>
@@ -79,9 +84,9 @@ document.getElementById('welcome').textContent = APT_NAMES[apt] ? `Bun venit —
 
 // Free, no-signup hit counter (community revival of countapi.xyz). Best-effort —
 // if the service is ever down, the page still works fully, just without the count.
-fetch(`https://countapi.mileshilliard.com/api/v1/hit/ghid-rasnov-apartamente/${apt}`).catch(()=>{});
+fetch(`https://countapi.mileshilliard.com/api/v1/hit/ghid-rasnov-${apt}`).catch(()=>{});
 
-// ---------- Data ----------
+// ---------- Categorii ----------
 const CATS = {
   aventura:  { label: "Aventură",     color: "#3C5B44" },
   cultura:   { label: "Cultură",      color: "#8F6222" },
@@ -91,83 +96,51 @@ const CATS = {
   facilitare:{ label: "Facilitare",   color: "#7A6C5D" },
 };
 
-const PLACES = [
-  { name: "Dino Parc Râșnov", cat: "aventura", icon: "🦕",
-    desc: "Cel mai mare parc cu dinozauri din SE Europei, în pădure lângă Cetatea Râșnov.",
-    website: "https://dinoparc.ro", mapsId: "ChIJeb9jX69Fs0ARAEsx7MiVBHE", phone: "+40 741 208 703" },
-  { name: "Peștera Valea Cetății", cat: "aventura", icon: "🕳️",
-    desc: "Tur ghidat scurt printr-o peșteră aproape de Cetatea Râșnov, potrivit pentru toată familia.",
-    website: null, mapsId: "ChIJTTT7-05Es0ARRM9ow7gv13I", phone: "+40 724 345 898" },
-  { name: "Wolf Park Adventure", cat: "aventura", icon: "🌲",
-    desc: "Parc de aventură suspendat în copaci, la Zărnești — trasee și tiroliene pentru toate vârstele.",
-    website: "https://www.wolfpark.ro", mapsId: "ChIJIRbJQSVJs0ARbyeYeoQ_fTI", phone: "+40 786 226 500" },
-  { name: "Libearty Bear Sanctuary", cat: "aventura", icon: "🐻",
-    desc: "Cel mai mare sanctuar de urși din Europa — tur ghidat emoționant, în natură, la Zărnești.",
-    website: "https://millionsoffriends.org", mapsId: "ChIJ2-Spxj5Ps0ARJoGtF3BfdpU", phone: "+40 731 334 791" },
-  { name: "Centrul de Echitație Diana", cat: "aventura", icon: "🐴",
-    desc: "Plimbări cu calul prin pădure și poieni — pentru începători și copii.",
-    website: null, mapsId: "ChIJxSjBhqJFs0ARQFFSgyVoVhw", phone: "+40 268 230 168" },
-  { name: "Închirieri ATV / Buggy Moieciu", cat: "aventura", icon: "🏍️",
-    desc: "Tur ATV/buggy cu ghid pe trasee montane, potrivit și pentru începători.",
-    website: null, mapsId: "ChIJoauCVZw5s0ARc3cJYcJfAJE", phone: "+40 746 693 961" },
-  { name: "Interski Poiana Brașov", cat: "aventura", icon: "⛷️",
-    desc: "Școală de ski & snowboard + închirieri echipament, lângă gondolă.",
-    website: "https://interski-romania.ro", mapsId: "ChIJC8MMUH1Ds0ARQxk10Zx1p7M", phone: "+40 745 012 887" },
-  { name: "R&J Ski School", cat: "aventura", icon: "🏂",
-    desc: "Școală de ski & bootfitting în Poiana Brașov, foarte apreciată pentru copii.",
-    website: null, mapsId: "ChIJEXOKeJ1Es0ARVIdZc1ZTmIU", phone: "+40 722 275 627" },
-  { name: "Castelul Bran", cat: "cultura", icon: "🏰",
-    desc: "Obiectivul istoric emblematic al zonei — reședința legendei lui Dracula.",
-    website: "https://www.bran-castle.com", mapsId: "ChIJMd4VpOVHs0ARf6sh2ZInks8", phone: "+40 268 237 700" },
-  { name: "Ceaihana — Baie rusească", cat: "wellness", icon: "🔥",
-    desc: "Ritual tradițional de saună slavă (banya), cu maestru de saună.",
-    website: null, mapsId: "ChIJ9bhCGwBFs0ARK8omwPEe4IE", phone: "+40 744 318 004" },
-  { name: "Masaj Râșnov — Petru", cat: "wellness", icon: "💆",
-    desc: "Masaj terapeutic la domiciliu — vine chiar în apartament, la cerere.",
-    website: null, mapsId: "ChIJSd-Mz_RFs0ARlKEr3X_Jj5M", phone: "+40 759 395 367" },
-  { name: "Wolkendorf Bio Hotel & Spa", cat: "wellness", icon: "♨️",
-    desc: "Spa cu hammam, jacuzzi exterior și bazin cu apă sărată, la ~15 min de Râșnov.",
-    website: null, mapsId: "ChIJ4xTtkLBPs0ARICCkm7r4evg", phone: "+40 727 316 091" },
-  { name: "Aquatic Paradise Brașov", cat: "wellness", icon: "🌊",
-    desc: "Cel mai mare parc acvatic din zonă — tobogane, piscine, saune.",
-    website: null, mapsId: "ChIJ6y40lcdbs0ARy-oNNLDVM8U", phone: "+40 268 440 070" },
-  { name: "La Promenadă Restaurant", cat: "gastro", icon: "🍽️",
-    desc: "Restaurant family-friendly, cu loc de joacă interior/exterior și livrare.",
-    website: null, mapsId: "ChIJ17-gSadFs0ARbdg3PY0lYIo", phone: "+40 371 233 771" },
-  { name: "La Noi", cat: "gastro", icon: "🍲",
-    desc: "Bucătărie tradițională autentică, atmosferă de casă la munte — necesită anunț prealabil.",
-    website: null, mapsId: "ChIJQ3l0JRxEs0ARzyOLQ_P9XcY", phone: "+40 722 228 204" },
-  { name: "Berăria RAO", cat: "gastro", icon: "🍺",
-    desc: "Local casual, prețuri accesibile, mix de bucătărie românească și internațională.",
-    website: null, mapsId: "ChIJSyrTWm5Fs0AR6QowMPTBwSM", phone: "+40 755 310 402" },
-  { name: "Punct gastronomic local", cat: "gastro", icon: "🐟",
-    desc: "Păstrăv proaspăt la grătar/prăjit/afumat, pe malul apei — punct gastronomic autentic.",
-    website: null, mapsId: "ChIJe8YlkCBHs0ARsgoQrRpakbE", phone: "+40 747 869 357" },
-  { name: "Bada Bing — livrare pizza", cat: "livrare", icon: "🍕",
-    desc: "Livrare rapidă, inclusiv spre Zărnești — bun pentru prima seară de cazare.",
-    website: null, mapsId: "ChIJ5ya-CQFFs0ARSA4YOfF1rp8", phone: "+40 754 472 505" },
-  { name: "Sam's Pizza Râșnov", cat: "livrare", icon: "🍕",
-    desc: "Pizza foarte bine cotată local, atmosferă modernă, recenzii constant excelente.",
-    website: null, mapsId: "ChIJVRc7cxhFs0ARWrTwBCsfhX0", phone: "+40 758 880 503" },
-  { name: "Taxă acces Parcul Național Piatra Craiului", cat: "facilitare", icon: "🎫",
-    desc: "Bilet obligatoriu pentru trasee în parc (5 lei/7 zile) — cumperi online, ca să nu pierzi timp la automat.",
-    website: "https://www.pcrai.ro/bilete", mapsId: null, phone: null },
-  { name: "Cetatea Râșnov", cat: "cultura", icon: "🏯",
-    desc: "Cetate țărănească medievală pe deal, cu vedere panoramică — curtea e vizitabilă (10 lei), unele zone interioare pot fi în renovare.",
-    website: null, mapsId: "ChIJ0fk_EAxFs0ARiA5NhYGZXIY", phone: null },
-  { name: "Palincaria Transilvania", cat: "gastro", icon: "🥃",
-    desc: "Distilerie mică, de familie — tur + degustare de palincă/țuică artizanală, fără zahăr adăugat.",
-    website: null, mapsId: "ChIJ6TxD38FFs0ARiCeNb9eWVhM", phone: "+40 744 330 889" },
-  { name: "Sub Cetate Sergiana", cat: "gastro", icon: "🍲",
-    desc: "Bucătărie tradițională românească, terasă mare, aproape de Cetatea Râșnov.",
-    website: null, mapsId: "ChIJcYRltbFZs0ARSl5n2dmF61M", phone: "+40 721 200 017" },
-  { name: "Rădsor", cat: "gastro", icon: "🍽️",
-    desc: "Restaurant-hotel cu bucătărie românească, cofetărie și înghețată artizanală — bun pentru popas oricând.",
-    website: null, mapsId: "ChIJNeIVaqNFs0AR4kqECyWdwik", phone: "+40 774 467 136" },
-  { name: "Magic Parc Râșnov", cat: "aventura", icon: "🎪",
-    desc: "Sat tematic pentru copii — vânătoare de comori, spectacol de magie, castel gonflabil, mini-ATV.",
-    website: null, mapsId: "ChIJ22qHcMxFs0ARQbVjT0Hd0jw", phone: "+40 775 300 500" },
-];
+// ---------- Date live din Google Sheets ----------
+// Link-ul de mai jos e cel primit de la "File → Share → Publish to web" (format CSV),
+// pentru tab-ul "Afaceri" din baza de date. Se poate schimba oricând fără alt cod.
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT_LbOENmZHd9d5su2EOTaqVcqDgwUfD6xBfltgKGG8326YnWApHtmv4ZNRJB3N40Yj902RfUM1Dexf/pub?gid=1395207386&single=true&output=csv";
+
+const CATEGORII_VALIDE = new Set(Object.keys(CATS));
+let PLACES = [];
+
+function rowToPlace(row) {
+  const activ = (row.activ || "").trim().toLowerCase();
+  if (activ === "nu") return null; // ascunsă manual din Sheets
+
+  const cat = (row.categorie || "").trim();
+  if (!CATEGORII_VALIDE.has(cat)) return null; // rând gol/invalid, sărit
+
+  const photos = [row.poza_1, row.poza_2].map(p => (p || "").trim()).filter(Boolean);
+
+  return {
+    name: (row.nume || "").trim(),
+    cat,
+    icon: (row.iconita_fallback || "📍").trim(),
+    desc: (row.descriere || "").trim(),
+    website: (row.website || "").trim() || null,
+    facebook: (row.facebook || "").trim() || null,
+    instagram: (row.instagram || "").trim() || null,
+    phone: (row.telefon || "").trim() || null,
+    mapsId: (row.google_maps_place_id || "").trim() || null,
+    photos: photos.length ? photos : undefined,
+  };
+}
+
+async function loadPlaces() {
+  try {
+    const res = await fetch(SHEET_CSV_URL);
+    const csvText = await res.text();
+    const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+    PLACES = parsed.data.map(rowToPlace).filter(Boolean);
+  } catch (e) {
+    document.getElementById('grid').innerHTML =
+      '<p style="color:var(--brick); font-size:13px; grid-column:1/-1;">Nu am putut încărca recomandările chiar acum. Încearcă să reîmprospătezi pagina.</p>';
+    return;
+  }
+  renderFilters();
+  render('toate');
+}
 
 function mapsUrl(p){ return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' Rasnov Brasov')}&query_place_id=${p.mapsId}`; }
 
@@ -179,8 +152,18 @@ function render(filter){
     const cat = CATS[p.cat];
     const card = document.createElement('div');
     card.className = 'card';
+    let mediaHtml;
+    if (p.photos && p.photos.length > 1) {
+      mediaHtml = `<div style="display:flex; width:100%; height:100%; gap:2px;">
+        ${p.photos.slice(0,2).map(src => `<img src="${src}" alt="${p.name}" style="width:50%;height:100%;object-fit:cover;">`).join('')}
+      </div>`;
+    } else if (p.photo || (p.photos && p.photos.length === 1)) {
+      mediaHtml = `<img src="${p.photo || p.photos[0]}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;">`;
+    } else {
+      mediaHtml = p.icon;
+    }
     card.innerHTML = `
-      <div class="card-top" style="background:${cat.color}1A;">${p.icon}</div>
+      <div class="card-top" style="background:${cat.color}1A;">${mediaHtml}</div>
       <div class="card-body">
         <p class="card-title serif">${p.name}</p>
         <span class="cat-badge" style="background:${cat.color}1A; color:${cat.color};">${cat.label}</span>
@@ -189,6 +172,12 @@ function render(filter){
           ${p.website ? `<a class="btn" href="${p.website}" target="_blank" rel="noopener">🌐 Website</a>` : ''}
           ${p.mapsId ? `<a class="btn primary" href="${mapsUrl(p)}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}
           ${p.phone ? `<a class="btn phone" href="tel:${p.phone.replace(/\s/g,'')}">📞 ${p.phone}</a>` : ''}
+          ${p.facebook
+            ? `<a class="btn social" href="${p.facebook}" target="_blank" rel="noopener" title="Facebook">📘</a>`
+            : `<span class="btn social inactive" title="Fără pagină Facebook">📘</span>`}
+          ${p.instagram
+            ? `<a class="btn social" href="${p.instagram}" target="_blank" rel="noopener" title="Instagram">📷</a>`
+            : `<span class="btn social inactive" title="Fără cont Instagram">📷</span>`}
         </div>
       </div>
     `;
@@ -212,8 +201,7 @@ function renderFilters(){
   });
 }
 
-renderFilters();
-render('toate');
+loadPlaces();
 </script>
 </body>
 </html>
