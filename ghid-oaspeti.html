@@ -82,8 +82,14 @@
 // ---------- Apartment identity + visit counter (lightweight, no backend) ----------
 const params = new URLSearchParams(window.location.search);
 const apt = params.get('apt') || 'general';
-const APT_NAMES = { ap5: 'Apartamentul 5 — Beautiful views near the Fortress', ap12: 'Apartamentul 12 — Peaceful and inviting' };
-document.getElementById('welcome').textContent = APT_NAMES[apt] ? `Bun venit — ${APT_NAMES[apt]}` : '';
+const APT_NAMES = {
+  ap5:    { name: 'Apartamentul 5 — Beautiful views near the Fortress', zona: 'rasnov' },
+  ap12:   { name: 'Apartamentul 12 — Peaceful and inviting', zona: 'rasnov' },
+  sacele: { name: 'Family House with mountain views', zona: 'sacele-brasov' },
+};
+const currentApt = APT_NAMES[apt];
+const currentZona = currentApt ? currentApt.zona : 'rasnov'; // implicit Râșnov, pt link-uri vechi
+document.getElementById('welcome').textContent = currentApt ? `Bun venit — ${currentApt.name}` : '';
 
 // Free, no-signup hit counter (community revival of countapi.xyz). Best-effort —
 // if the service is ever down, the page still works fully, just without the count.
@@ -110,6 +116,9 @@ let PLACES = [];
 function rowToPlace(row) {
   const activ = (row.activ || "").trim().toLowerCase();
   if (activ === "nu") return null; // ascunsă manual din Sheets
+
+  const zona = (row.zona || "").trim().toLowerCase() || "rasnov"; // implicit Râșnov pt rândurile vechi
+  if (zona !== currentZona) return null; // nu e din zona apartamentului curent
 
   const cat = (row.categorie || "").trim();
   if (!CATEGORII_VALIDE.has(cat)) return null; // rând gol/invalid, sărit
