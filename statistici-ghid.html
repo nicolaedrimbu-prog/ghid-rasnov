@@ -34,7 +34,7 @@
   <div class="card">
     <div>
       <div class="name">Apartamentul 5</div>
-      <div class="sub">Beautiful views near the Fortress</div>
+      <div class="sub">Beautifull views near the Fortress</div>
     </div>
     <div class="count" id="c-ap5">—</div>
   </div>
@@ -42,7 +42,7 @@
   <div class="card">
     <div>
       <div class="name">Apartamentul 12</div>
-      <div class="sub">Peaceful and inviting</div>
+      <div class="sub">Pacefull and inviting</div>
     </div>
     <div class="count" id="c-ap12">—</div>
   </div>
@@ -65,7 +65,7 @@
 <script>
 async function getCount(key){
   try{
-    const res = await fetch(`https://countapi.mileshilliard.com/api/v1/get/ghid-rasnov-apartamente/${key}`);
+    const res = await fetch(`https://countapi.mileshilliard.com/api/v1/get/ghid-rasnov-${key}`);
     const data = await res.json();
     return data.value ?? 0;
   }catch(e){ return null; }
