@@ -117,13 +117,17 @@ function rowToPlace(row) {
   const activ = (row.activ || "").trim().toLowerCase();
   if (activ === "nu") return null; // ascunsă manual din Sheets
 
-  const zona = (row.zona || "").trim().toLowerCase() || "rasnov"; // implicit Râșnov pt rândurile vechi
-  if (zona !== currentZona) return null; // nu e din zona apartamentului curent
+  const zonaRaw = (row.zona || "").trim().toLowerCase() || "rasnov"; // implicit Râșnov pt rândurile vechi
+  const zoneList = zonaRaw.split(",").map(z => z.trim()).filter(Boolean);
+  if (!zoneList.includes(currentZona)) return null; // nu e din zona apartamentului curent
 
   const cat = (row.categorie || "").trim();
   if (!CATEGORII_VALIDE.has(cat)) return null; // rând gol/invalid, sărit
 
   const photos = [row.poza_1, row.poza_2].map(p => (p || "").trim()).filter(Boolean);
+
+  const ordineRaw = (row.ordine || "").trim();
+  const ordine = ordineRaw && !isNaN(Number(ordineRaw)) ? Number(ordineRaw) : Infinity; // fără cifră = la coadă
 
   return {
     name: (row.nume || "").trim(),
@@ -136,6 +140,7 @@ function rowToPlace(row) {
     phone: (row.telefon || "").trim() || null,
     mapsId: (row.google_maps_place_id || "").trim() || null,
     photos: photos.length ? photos : undefined,
+    ordine,
   };
 }
 
@@ -145,6 +150,9 @@ async function loadPlaces() {
     const csvText = await res.text();
     const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
     PLACES = parsed.data.map(rowToPlace).filter(Boolean);
+    // Sortare: cele cu "ordine" completat vin primele, în ordine crescătoare;
+    // restul rămân în ordinea din Sheets (stable sort), la coadă.
+    PLACES.sort((a, b) => a.ordine - b.ordine);
   } catch (e) {
     document.getElementById('grid').innerHTML =
       '<p style="color:var(--brick); font-size:13px; grid-column:1/-1;">Nu am putut încărca recomandările chiar acum. Încearcă să reîmprospătezi pagina.</p>';
