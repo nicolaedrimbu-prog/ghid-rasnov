@@ -38,6 +38,9 @@
   .card-top{height:104px; display:flex; align-items:center; justify-content:center; font-size:44px;}
   .card-body{padding:16px;}
   .card-title{font-size:16px; font-weight:600; margin:0; line-height:1.25;}
+  .title-row{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
+  .soon-badge{flex-shrink:0; background:var(--amber); color:#fff; font-size:10px; font-weight:600;
+    padding:3px 8px; border-radius:999px; white-space:nowrap; margin-top:2px;}
   .cat-badge{display:inline-block; font-size:11px; font-weight:500; padding:3px 9px; border-radius:999px; margin-top:6px;}
   .desc{font-size:13px; color:var(--ink-soft); margin:10px 0 0; line-height:1.45;}
 
@@ -146,6 +149,8 @@ const I18N = {
     feedbackBtn: "Trimite pe WhatsApp",
     feedbackMsg: (apt, text) => `Salut! Sunt oaspete la "${apt}" și am o sugestie pentru ghid: ${text}`,
     loadError: "Nu am putut încărca recomandările chiar acum. Încearcă să reîmprospătezi pagina.",
+    soonBeneficii: "🎁 Beneficii în curând",
+    soonCadou: "🎁 Cadou în curând",
   },
   en: {
     eyebrow: "🔥 Guest Guide",
@@ -160,6 +165,8 @@ const I18N = {
     feedbackBtn: "Send on WhatsApp",
     feedbackMsg: (apt, text) => `Hi! I'm a guest at "${apt}" and I have a suggestion for the guide: ${text}`,
     loadError: "We couldn't load the recommendations right now. Try refreshing the page.",
+    soonBeneficii: "🎁 Perks coming soon",
+    soonCadou: "🎁 Gift coming soon",
   },
 };
 let currentLang = 'ro';
@@ -204,6 +211,9 @@ function rowToPlace(row) {
   const ordineRaw = (row.ordine || "").trim();
   const ordine = ordineRaw && !isNaN(Number(ordineRaw)) ? Number(ordineRaw) : Infinity; // fără cifră = la coadă
 
+  const badgeRaw = (row.beneficiu_viitor || "").trim().toLowerCase();
+  const badge = (badgeRaw === "beneficii" || badgeRaw === "cadou") ? badgeRaw : null;
+
   return {
     name: (row.nume || "").trim(),
     cat,
@@ -217,6 +227,7 @@ function rowToPlace(row) {
     mapsId: (row.google_maps_place_id || "").trim() || null,
     photos: photos.length ? photos : undefined,
     ordine,
+    badge,
   };
 }
 
@@ -267,7 +278,10 @@ function render(filter){
     card.innerHTML = `
       <div class="card-top" style="background:${cat.color}1A;">${mediaHtml}</div>
       <div class="card-body">
-        <p class="card-title serif">${p.name}</p>
+        <div class="title-row">
+          <p class="card-title serif">${p.name}</p>
+          ${p.badge ? `<span class="soon-badge">${p.badge === 'beneficii' ? t.soonBeneficii : t.soonCadou}</span>` : ''}
+        </div>
         <span class="cat-badge" style="background:${cat.color}1A; color:${cat.color};">${catLabel}</span>
         <p class="desc">${desc}</p>
         <div class="actions">
