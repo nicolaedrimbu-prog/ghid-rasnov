@@ -74,7 +74,15 @@
 
 <footer>
   <div class="box">
-    Ai nevoie de o recomandare care nu e în listă? Scrie-ne — actualizăm ghidul constant.
+    <p style="margin:0 0 10px; font-weight:600; color:var(--ink);">Ai nevoie de o recomandare care nu e în listă?</p>
+    <textarea id="feedback-text" rows="3" placeholder="Scrie aici sugestia ta — o citim și actualizăm ghidul."
+      style="width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+        font-family:'Inter', sans-serif; font-size:13px; color:var(--ink); resize:vertical;"></textarea>
+    <button id="feedback-send" onclick="sendFeedback()"
+      style="margin-top:10px; background:var(--spruce-deep); color:#fff; border:none; border-radius:999px;
+        padding:9px 18px; font-size:13px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+      Trimite pe WhatsApp
+    </button>
   </div>
 </footer>
 
@@ -83,13 +91,25 @@
 const params = new URLSearchParams(window.location.search);
 const apt = params.get('apt') || 'general';
 const APT_NAMES = {
-  ap5:    { name: 'Apartamentul 5 — Beautiful views near the Fortress', zona: 'rasnov' },
-  ap12:   { name: 'Apartamentul 12 — Peaceful and inviting', zona: 'rasnov' },
-  sacele: { name: 'Family House with mountain views', zona: 'sacele-brasov' },
+  ap5:    { name: 'Apartamentul 5 — Beautiful views near the Fortress', zona: 'rasnov', telefon: '40751090407' },
+  ap12:   { name: 'Apartamentul 12 — Peaceful and inviting', zona: 'rasnov', telefon: '40751090407' },
+  sacele: { name: 'Family House with mountain views', zona: 'sacele-brasov', telefon: '40721372770' },
 };
 const currentApt = APT_NAMES[apt];
 const currentZona = currentApt ? currentApt.zona : 'rasnov'; // implicit Râșnov, pt link-uri vechi
 document.getElementById('welcome').textContent = currentApt ? `Bun venit — ${currentApt.name}` : '';
+
+function sendFeedback(){
+  const text = document.getElementById('feedback-text').value.trim();
+  if (!text) {
+    document.getElementById('feedback-text').focus();
+    return;
+  }
+  const apartmentLabel = currentApt ? currentApt.name : 'ghid';
+  const phone = currentApt ? currentApt.telefon : '40751090407';
+  const message = `Salut! Sunt oaspete la "${apartmentLabel}" și am o sugestie pentru ghid: ${text}`;
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+}
 
 // Free, no-signup hit counter (community revival of countapi.xyz). Best-effort —
 // if the service is ever down, the page still works fully, just without the count.
