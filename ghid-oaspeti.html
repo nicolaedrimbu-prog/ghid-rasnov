@@ -83,6 +83,16 @@
 </main>
 
 <footer>
+  <div class="box" id="code-box" style="margin-bottom:14px;">
+    <p id="code-label" style="margin:0 0 4px; font-weight:600; color:var(--ink);">Codul tău pentru beneficii</p>
+    <p id="code-sub" style="margin:0 0 12px; font-size:12px; color:var(--ink-soft);">Generează-l o dată și arată-l la orice afacere din listă care oferă un beneficiu.</p>
+    <div id="code-display"></div>
+    <button id="code-generate-btn" onclick="generateGuestCode()"
+      style="background:var(--amber); color:#fff; border:none; border-radius:999px;
+        padding:9px 18px; font-size:13px; font-weight:500; cursor:pointer;">
+      <span id="code-btn-text">Generează codul meu</span>
+    </button>
+  </div>
   <div class="box">
     <p id="feedback-label" style="margin:0 0 10px; font-weight:600; color:var(--ink);">Ai nevoie de o recomandare care nu e în listă?</p>
     <textarea id="feedback-text" rows="3" placeholder="Scrie aici sugestia ta — o citim și actualizăm ghidul."
@@ -96,6 +106,8 @@
   </div>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
 <script>
 // ---------- Apartment identity + visit counter (lightweight, no backend) ----------
 const params = new URLSearchParams(window.location.search);
@@ -107,6 +119,89 @@ const APT_NAMES = {
 };
 const currentApt = APT_NAMES[apt];
 const currentZona = currentApt ? currentApt.zona : 'rasnov'; // implicit Râșnov, pt link-uri vechi
+
+// ---------- Sistem de coduri pentru beneficii ----------
+const SUPABASE_URL = "https://mwtodfcwuwzgnkohxpwi.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_5I9zz5OjPkB7yuew0cWBVA_mmmxSjhf";
+const CODE_STORAGE_KEY = `lokal_guest_code_${apt}`;
+
+function randomCode(len = 6) {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // fără 0/O/1/I, evită confuzii
+  let out = "";
+  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
+async function sbFetch(path, options = {}) {
+  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...(options.headers || {}),
+    },
+  });
+}
+
+function renderCodeQR(code) {
+  const el = document.getElementById('code-display');
+  el.innerHTML = '';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff; padding:14px; border-radius:12px; display:inline-block; margin-bottom:10px;';
+  el.appendChild(box);
+  new QRCode(box, { text: code, width: 160, height: 160 });
+  const codeText = document.createElement('p');
+  codeText.style.cssText = 'font-family:monospace; font-size:18px; font-weight:600; letter-spacing:2px; color:var(--ink); margin:0 0 12px;';
+  codeText.textContent = code;
+  el.appendChild(codeText);
+  document.getElementById('code-generate-btn').style.display = 'none';
+}
+
+async function generateGuestCode() {
+  if (!currentApt) return;
+
+  // Reutilizează un cod existent, dacă e încă valabil
+  try {
+    const cached = JSON.parse(localStorage.getItem(CODE_STORAGE_KEY) || 'null');
+    if (cached && new Date(cached.valid_until) > new Date()) {
+      renderCodeQR(cached.code);
+      return;
+    }
+  } catch (e) { /* ignoră, generăm unul nou */ }
+
+  const btn = document.getElementById('code-generate-btn');
+  btn.disabled = true;
+
+  const validUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  let code = randomCode();
+  let attempt = 0;
+  let saved = null;
+
+  while (attempt < 3 && !saved) {
+    const res = await sbFetch('guest_codes', {
+      method: 'POST',
+      body: JSON.stringify({ code, apt, apt_name: currentApt.name, valid_until: validUntil }),
+    });
+    if (res.status === 201) {
+      saved = await res.json();
+    } else if (res.status === 409) {
+      code = randomCode(); // coliziune rară, încearcă alt cod
+      attempt++;
+    } else {
+      btn.disabled = false;
+      alert('Nu am putut genera codul chiar acum. Încearcă din nou.');
+      return;
+    }
+  }
+
+  if (saved) {
+    localStorage.setItem(CODE_STORAGE_KEY, JSON.stringify({ code, valid_until: validUntil }));
+    renderCodeQR(code);
+  }
+}
+
 
 function sendFeedback(){
   const text = document.getElementById('feedback-text').value.trim();
@@ -151,6 +246,9 @@ const I18N = {
     loadError: "Nu am putut încărca recomandările chiar acum. Încearcă să reîmprospătezi pagina.",
     soonBeneficii: "🎁 Beneficii în curând",
     soonCadou: "🎁 Cadou în curând",
+    codeLabel: "Codul tău pentru beneficii",
+    codeSub: "Generează-l o dată și arată-l la orice afacere din listă care oferă un beneficiu.",
+    codeBtn: "Generează codul meu",
   },
   en: {
     eyebrow: "🔥 Guest Guide",
@@ -167,6 +265,9 @@ const I18N = {
     loadError: "We couldn't load the recommendations right now. Try refreshing the page.",
     soonBeneficii: "🎁 Perks coming soon",
     soonCadou: "🎁 Gift coming soon",
+    codeLabel: "Your benefits code",
+    codeSub: "Generate it once and show it at any business in the list that offers a perk.",
+    codeBtn: "Generate my code",
   },
 };
 let currentLang = 'ro';
@@ -183,6 +284,9 @@ function setLang(lang){
   document.getElementById('feedback-label').textContent = t.feedbackLabel;
   document.getElementById('feedback-text').placeholder = t.feedbackPlaceholder;
   document.getElementById('feedback-btn-text').textContent = t.feedbackBtn;
+  document.getElementById('code-label').textContent = t.codeLabel;
+  document.getElementById('code-sub').textContent = t.codeSub;
+  document.getElementById('code-btn-text').textContent = t.codeBtn;
   renderFilters();
   render(currentFilter);
 }
