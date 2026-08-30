@@ -4,39 +4,117 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Confirmare beneficiu — Lokal</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
-  :root{ --bg:#EAE3D3; --surface:#FBF8F1; --ink:#20291F; --ink-soft:#5B6459;
-    --spruce:#3C5B44; --spruce-deep:#26382C; --amber:#B9812F; --brick:#9C4536; --line:rgba(32,41,31,0.14); }
+  :root{
+    --teal-deep:#10302B; --teal:#1A4A42; --gold:#C98A2C; --gold-soft:#E8CE9E;
+    --cream:#F7F2E8; --ink:#181E1B; --ink-soft:#5B6459; --line:#DCD5C6;
+    --brick:#9C4536; --brick-soft:#F5E4E0; --green:#2E6B4F; --green-soft:#E4F0E9;
+  }
   *{box-sizing:border-box;}
-  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter', system-ui, sans-serif; padding:24px 16px;}
-  .wrap{max-width:480px; margin:0 auto;}
-  h1{font-family:'Fraunces', Georgia, serif; font-size:22px; margin:0 0 4px;}
-  .biz-name{color:var(--spruce); font-weight:600; font-size:15px; margin-bottom:20px;}
-  #reader{width:100%; border-radius:16px; overflow:hidden; border:1px solid var(--line);}
-  .card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:20px; margin-top:16px;}
-  .row{display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;}
-  .row b{color:var(--spruce-deep);}
-  .btn{width:100%; padding:14px; border:none; border-radius:999px; font-size:15px; font-weight:600;
-    cursor:pointer; margin-top:12px;}
-  .btn-confirm{background:var(--spruce-deep); color:#fff;}
-  .btn-again{background:transparent; color:var(--spruce); border:1px solid var(--spruce);}
-  .status{padding:14px 16px; border-radius:12px; font-size:14px; margin-top:16px; font-weight:500;}
-  .status.ok{background:#E8F0E9; color:var(--spruce-deep);}
-  .status.err{background:#F5E4E0; color:var(--brick);}
-  .mono{font-family:'JetBrains Mono', monospace;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:'Inter', system-ui, sans-serif;
+    min-height:100vh; display:flex; flex-direction:column;}
+
+  header{background:var(--teal-deep); padding:16px 20px; display:flex; align-items:center; gap:10px;}
+  .ring{width:22px; height:22px; border-radius:50%; background:var(--gold); position:relative; flex-shrink:0;}
+  .ring::after{content:''; position:absolute; inset:6px; border-radius:50%; background:var(--teal-deep);}
+  .wordmark{font-family:'Poppins', sans-serif; font-weight:700; color:#fff; font-size:18px;}
+  .tag{margin-left:auto; color:var(--gold); font-size:10px; font-weight:700; letter-spacing:0.08em;}
+
+  main{flex:1; padding:20px; max-width:480px; margin:0 auto; width:100%; display:flex; flex-direction:column;}
+  .biz-name{font-size:20px; font-weight:700; color:var(--teal-deep); margin:4px 0 2px;}
+  .biz-sub{font-size:13px; color:var(--ink-soft); margin:0 0 18px;}
+
+  /* ---------- Scan stage ---------- */
+  #scan-stage{transition:opacity .25s ease, max-height .25s ease; overflow:hidden;}
+  #scan-stage.hidden{opacity:0; max-height:0; pointer-events:none;}
+  .scan-frame{position:relative; border-radius:20px; overflow:hidden; background:var(--teal-deep);
+    box-shadow:0 8px 24px rgba(16,48,43,0.18); aspect-ratio:1/1;}
+  .scan-frame::before{content:''; position:absolute; inset:14%; border:2.5px solid var(--gold);
+    border-radius:16px; z-index:5; pointer-events:none; opacity:0.85;}
+  .scan-hint{text-align:center; font-size:13px; color:var(--ink-soft); margin-top:14px;}
+  #reader{width:100%; height:100%;}
+  #reader video{object-fit:cover !important;}
+
+  /* ---------- Result stage ---------- */
+  #result-stage{opacity:0; max-height:0; overflow:hidden; transition:opacity .3s ease .1s, max-height .3s ease;}
+  #result-stage.visible{opacity:1; max-height:800px;}
+
+  .confirm-card{background:#fff; border-radius:20px; padding:22px 20px; box-shadow:0 8px 24px rgba(16,48,43,0.1);}
+  .confirm-icon{width:44px; height:44px; border-radius:50%; background:var(--gold-soft); color:var(--gold);
+    display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:12px;}
+  .confirm-row{display:flex; justify-content:space-between; align-items:baseline; padding:9px 0;
+    border-bottom:1px solid var(--line); font-size:14px;}
+  .confirm-row:last-of-type{border-bottom:none;}
+  .confirm-row span{color:var(--ink-soft);}
+  .confirm-row b{color:var(--teal-deep); font-family:'JetBrains Mono', monospace; font-size:16px; letter-spacing:1px;}
+
+  .btn-confirm{width:100%; margin-top:18px; padding:16px; border:none; border-radius:14px;
+    background:var(--teal-deep); color:#fff; font-size:16px; font-weight:700; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px; transition:transform .12s ease, background .2s;}
+  .btn-confirm:active{transform:scale(0.97);}
+  .btn-confirm:disabled{opacity:0.5; cursor:default;}
+  .btn-again{width:100%; margin-top:10px; padding:13px; border:1.5px solid var(--line); border-radius:14px;
+    background:transparent; color:var(--ink-soft); font-size:14px; font-weight:600; cursor:pointer;}
+
+  /* ---------- Outcome (success / error) ---------- */
+  #outcome-stage{opacity:0; max-height:0; overflow:hidden; transition:opacity .3s ease .1s, max-height .3s ease;}
+  #outcome-stage.visible{opacity:1; max-height:800px;}
+  .outcome-card{text-align:center; padding:32px 20px; border-radius:20px;}
+  .outcome-card.ok{background:var(--green-soft);}
+  .outcome-card.err{background:var(--brick-soft);}
+  .outcome-icon{width:64px; height:64px; border-radius:50%; margin:0 auto 14px; display:flex;
+    align-items:center; justify-content:center; font-size:32px; animation:pop .35s ease;}
+  .outcome-card.ok .outcome-icon{background:var(--green); color:#fff;}
+  .outcome-card.err .outcome-icon{background:var(--brick); color:#fff;}
+  .outcome-title{font-size:17px; font-weight:700; margin:0 0 4px;}
+  .outcome-card.ok .outcome-title{color:var(--green);}
+  .outcome-card.err .outcome-title{color:var(--brick);}
+  .outcome-sub{font-size:13px; color:var(--ink-soft); margin:0;}
+  @keyframes pop{from{transform:scale(0.6); opacity:0;} to{transform:scale(1); opacity:1;}}
+
+  .loading-dots::after{content:'…'; animation:dots 1.2s steps(4, end) infinite;}
+  @keyframes dots{0%,20%{content:'';} 40%{content:'.';} 60%{content:'..';} 80%,100%{content:'...';}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>📷 Confirmare beneficiu</h1>
-  <div class="biz-name" id="biz-name">Se încarcă...</div>
 
-  <div id="reader"></div>
-  <div id="result-area"></div>
-</div>
+<header>
+  <div class="ring"></div>
+  <div class="wordmark">lokal</div>
+  <div class="tag">PENTRU PARTENERI</div>
+</header>
+
+<main>
+  <div class="biz-name" id="biz-name">Se încarcă<span class="loading-dots"></span></div>
+  <div class="biz-sub">Scanează codul QR al oaspetelui pentru a confirma beneficiul.</div>
+
+  <div id="scan-stage">
+    <div class="scan-frame"><div id="reader"></div></div>
+    <p class="scan-hint">Îndreaptă camera spre codul QR arătat de oaspete</p>
+  </div>
+
+  <div id="result-stage">
+    <div class="confirm-card">
+      <div class="confirm-icon">🎁</div>
+      <div class="confirm-row"><span>Apartament</span><b id="result-apt">—</b></div>
+      <div class="confirm-row"><span>Cod</span><b id="result-code">—</b></div>
+      <button class="btn-confirm" id="confirm-btn">✓ Confirmă acordarea beneficiului</button>
+      <button class="btn-again" onclick="resetToScan()">Anulează, scanează alt cod</button>
+    </div>
+  </div>
+
+  <div id="outcome-stage">
+    <div class="outcome-card" id="outcome-card">
+      <div class="outcome-icon" id="outcome-icon">✓</div>
+      <p class="outcome-title" id="outcome-title">—</p>
+      <p class="outcome-sub" id="outcome-sub">—</p>
+    </div>
+    <button class="btn-confirm" style="margin-top:14px;" onclick="resetToScan()">Scanează alt cod</button>
+  </div>
+</main>
 
 <script>
 const SUPABASE_URL = "https://mwtodfcwuwzgnkohxpwi.supabase.co";
@@ -55,11 +133,11 @@ async function loadBusinessName() {
     const row = parsed.data.find(r => (r.id || '').trim() === businessId);
     if (row) businessName = row.nume;
   } catch (e) { /* fallback la id */ }
-  document.getElementById('biz-name').textContent = businessId ? businessName : 'Lipsește parametrul ?business= din link';
+  document.getElementById('biz-name').textContent = businessId ? businessName : 'Lipsește ?business= din link';
 }
 
 async function sbFetch(path, options = {}) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
     headers: {
       'apikey': SUPABASE_ANON_KEY,
@@ -68,73 +146,100 @@ async function sbFetch(path, options = {}) {
       ...(options.headers || {}),
     },
   });
-  return res;
 }
 
-function showStatus(html, ok) {
-  document.getElementById('result-area').innerHTML =
-    `<div class="status ${ok ? 'ok' : 'err'}">${html}</div>
-     <button class="btn btn-again" onclick="location.reload()">Scanează alt cod</button>`;
+function showStage(stage) {
+  document.getElementById('scan-stage').classList.toggle('hidden', stage !== 'scan');
+  document.getElementById('result-stage').classList.toggle('visible', stage === 'result');
+  document.getElementById('outcome-stage').classList.toggle('visible', stage === 'outcome');
 }
 
-async function handleScannedCode(code) {
-  code = code.trim().toUpperCase();
-  scanner.pause(true);
+function showOutcome(ok, title, sub) {
+  const card = document.getElementById('outcome-card');
+  card.className = 'outcome-card ' + (ok ? 'ok' : 'err');
+  document.getElementById('outcome-icon').textContent = ok ? '✓' : '✕';
+  document.getElementById('outcome-title').textContent = title;
+  document.getElementById('outcome-sub').textContent = sub;
+  showStage('outcome');
+}
 
-  // 1. Caută codul
+let currentGuestCode = null;
+
+async function handleScannedCode(decodedText) {
+  if (currentGuestCode) return; // evită scanări multiple în paralel
+  const code = decodedText.trim().toUpperCase();
+
+  await stopScanner();
+
   const res = await sbFetch(`guest_codes?code=eq.${encodeURIComponent(code)}&select=*`);
   const rows = await res.json();
+
   if (!rows || rows.length === 0) {
-    showStatus('❌ Cod invalid — nu există în sistem.', false);
+    showOutcome(false, 'Cod invalid', 'Nu există în sistem — verifică dacă a fost tastat/scanat corect.');
     return;
   }
   const gc = rows[0];
 
-  // 2. Verifică valabilitatea
   if (new Date(gc.valid_until) < new Date()) {
-    showStatus('⏰ Acest cod a expirat.', false);
+    showOutcome(false, 'Cod expirat', 'Acest cod nu mai este valabil.');
     return;
   }
   if (gc.scope_business_id && gc.scope_business_id !== businessId) {
-    showStatus('⚠️ Acest cod e valabil doar la altă afacere.', false);
+    showOutcome(false, 'Cod pentru altă afacere', 'Acest cod e valabil doar la un alt partener.');
     return;
   }
 
-  // 3. Arată confirmarea
-  document.getElementById('result-area').innerHTML = `
-    <div class="card">
-      <div class="row"><span>Apartament</span><b>${gc.apt_name}</b></div>
-      <div class="row"><span>Cod</span><b class="mono">${gc.code}</b></div>
-      <button class="btn btn-confirm" id="confirm-btn">Confirmă acordarea beneficiului</button>
-    </div>
-  `;
-  document.getElementById('confirm-btn').onclick = () => confirmRedemption(gc.id);
+  currentGuestCode = gc;
+  document.getElementById('result-apt').textContent = gc.apt_name;
+  document.getElementById('result-code').textContent = gc.code;
+  showStage('result');
 }
 
-async function confirmRedemption(codeId) {
+document.getElementById('confirm-btn').addEventListener('click', async () => {
+  if (!currentGuestCode) return;
+  const btn = document.getElementById('confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Se confirmă…';
+
   const res = await sbFetch('redemptions', {
     method: 'POST',
-    body: JSON.stringify({ code_id: codeId, business_id: businessId }),
+    body: JSON.stringify({ code_id: currentGuestCode.id, business_id: businessId }),
   });
+
   if (res.status === 201) {
-    showStatus('✅ Beneficiu confirmat cu succes!', true);
+    showOutcome(true, 'Beneficiu confirmat!', `${currentGuestCode.apt_name} — cod ${currentGuestCode.code}`);
   } else if (res.status === 409) {
-    showStatus('⚠️ Acest cod a fost deja folosit la voi.', false);
+    showOutcome(false, 'Deja folosit la voi', 'Acest cod a fost deja revendicat la această afacere.');
   } else {
-    const err = await res.text();
-    showStatus('❌ A apărut o eroare: ' + err, false);
+    showOutcome(false, 'A apărut o eroare', 'Încearcă din nou peste câteva secunde.');
   }
+  btn.disabled = false;
+  btn.textContent = '✓ Confirmă acordarea beneficiului';
+});
+
+function resetToScan() {
+  currentGuestCode = null;
+  showStage('scan');
+  startScanner();
 }
 
 let scanner;
+async function stopScanner() {
+  if (scanner) {
+    try { await scanner.stop(); } catch (e) {}
+    try { scanner.clear(); } catch (e) {}
+  }
+}
 function startScanner() {
   scanner = new Html5Qrcode("reader");
   scanner.start(
     { facingMode: "environment" },
-    { fps: 10, qrbox: 240 },
+    { fps: 10, qrbox: { width: 220, height: 220 } },
     (decodedText) => handleScannedCode(decodedText),
     () => {}
-  );
+  ).catch(() => {
+    document.getElementById('scan-hint');
+  });
 }
 
 loadBusinessName();
