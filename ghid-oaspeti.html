@@ -50,6 +50,7 @@
   .btn.social.inactive{opacity:0.32; cursor:default; filter:grayscale(1);}
   .btn.social.facebook{color:#1877F2; border-color:#1877F220;}
   .btn.social.instagram{color:#E1306C; border-color:#E1306C20;}
+  .lang-btn.active{background:var(--spruce-deep) !important; color:#fff !important; border-color:var(--spruce-deep) !important;}
 
   footer{max-width:960px; margin:0 auto; padding:0 20px 40px; color:var(--ink-soft); font-size:12px;}
   footer .box{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px;}
@@ -58,10 +59,16 @@
 <body>
 
 <header>
-  <div class="eyebrow">🔥 Ghid de oaspeți · Râșnov</div>
-  <h1 class="serif">Recomandările gazdei</h1>
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+    <div class="eyebrow" id="eyebrow-text">🔥 Ghid de oaspeți · Râșnov</div>
+    <div id="lang-toggle" style="display:flex; gap:4px; flex-shrink:0;">
+      <button onclick="setLang('ro')" class="lang-btn active" data-lang="ro" style="border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:4px 10px; font-size:12px; font-weight:600; cursor:pointer;">RO</button>
+      <button onclick="setLang('en')" class="lang-btn" data-lang="en" style="border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:4px 10px; font-size:12px; font-weight:600; cursor:pointer;">EN</button>
+    </div>
+  </div>
+  <h1 class="serif" id="title-text">Recomandările gazdei</h1>
   <p id="welcome"></p>
-  <p>O selecție de afaceri locale — activități, cultură, wellness și gastronomie, alese pentru sejurul tău.</p>
+  <p id="subtitle-text">O selecție de afaceri locale — activități, cultură, wellness și gastronomie, alese pentru sejurul tău.</p>
 </header>
 
 <nav id="filters"></nav>
@@ -74,14 +81,14 @@
 
 <footer>
   <div class="box">
-    <p style="margin:0 0 10px; font-weight:600; color:var(--ink);">Ai nevoie de o recomandare care nu e în listă?</p>
+    <p id="feedback-label" style="margin:0 0 10px; font-weight:600; color:var(--ink);">Ai nevoie de o recomandare care nu e în listă?</p>
     <textarea id="feedback-text" rows="3" placeholder="Scrie aici sugestia ta — o citim și actualizăm ghidul."
       style="width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
         font-family:'Inter', sans-serif; font-size:13px; color:var(--ink); resize:vertical;"></textarea>
     <button id="feedback-send" onclick="sendFeedback()"
       style="margin-top:10px; background:var(--spruce-deep); color:#fff; border:none; border-radius:999px;
         padding:9px 18px; font-size:13px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
-      Trimite pe WhatsApp
+      <span id="feedback-btn-text">Trimite pe WhatsApp</span>
     </button>
   </div>
 </footer>
@@ -97,7 +104,6 @@ const APT_NAMES = {
 };
 const currentApt = APT_NAMES[apt];
 const currentZona = currentApt ? currentApt.zona : 'rasnov'; // implicit Râșnov, pt link-uri vechi
-document.getElementById('welcome').textContent = currentApt ? `Bun venit — ${currentApt.name}` : '';
 
 function sendFeedback(){
   const text = document.getElementById('feedback-text').value.trim();
@@ -107,7 +113,7 @@ function sendFeedback(){
   }
   const apartmentLabel = currentApt ? currentApt.name : 'ghid';
   const phone = currentApt ? currentApt.telefon : '40751090407';
-  const message = `Salut! Sunt oaspete la "${apartmentLabel}" și am o sugestie pentru ghid: ${text}`;
+  const message = I18N[currentLang].feedbackMsg(apartmentLabel, text);
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
 }
 
@@ -117,13 +123,62 @@ fetch(`https://countapi.mileshilliard.com/api/v1/hit/ghid-rasnov-${apt}`).catch(
 
 // ---------- Categorii ----------
 const CATS = {
-  aventura:  { label: "Aventură",     color: "#3C5B44" },
-  cultura:   { label: "Cultură",      color: "#8F6222" },
-  wellness:  { label: "Wellness",     color: "#57727C" },
-  gastro:    { label: "Gastronomie",  color: "#9C4536" },
-  livrare:   { label: "Livrare",      color: "#B9812F" },
-  facilitare:{ label: "Facilitare",   color: "#7A6C5D" },
+  aventura:  { label: "Aventură",     label_en: "Adventure",   color: "#3C5B44" },
+  cultura:   { label: "Cultură",      label_en: "Culture",     color: "#8F6222" },
+  wellness:  { label: "Wellness",     label_en: "Wellness",    color: "#57727C" },
+  gastro:    { label: "Gastronomie",  label_en: "Food & Drink",color: "#9C4536" },
+  livrare:   { label: "Livrare",      label_en: "Delivery",    color: "#B9812F" },
+  facilitare:{ label: "Facilitare",   label_en: "Useful Links",color: "#7A6C5D" },
 };
+
+// ---------- Traduceri interfață ----------
+const I18N = {
+  ro: {
+    eyebrow: "🔥 Ghid de oaspeți",
+    title: "Recomandările gazdei",
+    subtitle: "O selecție de afaceri locale — activități, cultură, wellness și gastronomie, alese pentru sejurul tău.",
+    welcome: (name) => `Bun venit — ${name}`,
+    all: "Toate",
+    website: "🌐 Website",
+    maps: "📍 Google Maps",
+    feedbackLabel: "Ai nevoie de o recomandare care nu e în listă?",
+    feedbackPlaceholder: "Scrie aici sugestia ta — o citim și actualizăm ghidul.",
+    feedbackBtn: "Trimite pe WhatsApp",
+    feedbackMsg: (apt, text) => `Salut! Sunt oaspete la "${apt}" și am o sugestie pentru ghid: ${text}`,
+    loadError: "Nu am putut încărca recomandările chiar acum. Încearcă să reîmprospătezi pagina.",
+  },
+  en: {
+    eyebrow: "🔥 Guest Guide",
+    title: "Host's Recommendations",
+    subtitle: "A selection of local businesses — activities, culture, wellness and food, chosen for your stay.",
+    welcome: (name) => `Welcome — ${name}`,
+    all: "All",
+    website: "🌐 Website",
+    maps: "📍 Google Maps",
+    feedbackLabel: "Looking for a recommendation that's not on the list?",
+    feedbackPlaceholder: "Write your suggestion here — we'll read it and update the guide.",
+    feedbackBtn: "Send on WhatsApp",
+    feedbackMsg: (apt, text) => `Hi! I'm a guest at "${apt}" and I have a suggestion for the guide: ${text}`,
+    loadError: "We couldn't load the recommendations right now. Try refreshing the page.",
+  },
+};
+let currentLang = 'ro';
+
+function setLang(lang){
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+  const t = I18N[lang];
+  const cityLabel = currentApt ? (currentZona === 'sacele-brasov' ? 'Săcele-Brașov' : 'Râșnov') : 'Râșnov';
+  document.getElementById('eyebrow-text').textContent = `${t.eyebrow} · ${cityLabel}`;
+  document.getElementById('title-text').textContent = t.title;
+  document.getElementById('subtitle-text').textContent = t.subtitle;
+  document.getElementById('welcome').textContent = currentApt ? t.welcome(currentApt.name) : '';
+  document.getElementById('feedback-label').textContent = t.feedbackLabel;
+  document.getElementById('feedback-text').placeholder = t.feedbackPlaceholder;
+  document.getElementById('feedback-btn-text').textContent = t.feedbackBtn;
+  renderFilters();
+  render(currentFilter);
+}
 
 // ---------- Date live din Google Sheets ----------
 // Link-ul de mai jos e cel primit de la "File → Share → Publish to web" (format CSV),
@@ -154,6 +209,7 @@ function rowToPlace(row) {
     cat,
     icon: (row.iconita_fallback || "📍").trim(),
     desc: (row.descriere || "").trim(),
+    desc_en: (row.descriere_en || "").trim(),
     website: (row.website || "").trim() || null,
     facebook: (row.facebook || "").trim() || null,
     instagram: (row.instagram || "").trim() || null,
@@ -175,21 +231,27 @@ async function loadPlaces() {
     PLACES.sort((a, b) => a.ordine - b.ordine);
   } catch (e) {
     document.getElementById('grid').innerHTML =
-      '<p style="color:var(--brick); font-size:13px; grid-column:1/-1;">Nu am putut încărca recomandările chiar acum. Încearcă să reîmprospătezi pagina.</p>';
+      `<p style="color:var(--brick); font-size:13px; grid-column:1/-1;">${I18N[currentLang].loadError}</p>`;
     return;
   }
   renderFilters();
-  render('toate');
+  render(currentFilter);
 }
+
+let currentFilter = 'toate';
 
 function mapsUrl(p){ return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name + ' Rasnov Brasov')}&query_place_id=${p.mapsId}`; }
 
 function render(filter){
+  currentFilter = filter;
+  const t = I18N[currentLang];
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
   const list = filter === 'toate' ? PLACES : PLACES.filter(p => p.cat === filter);
   list.forEach(p => {
     const cat = CATS[p.cat];
+    const catLabel = currentLang === 'en' ? cat.label_en : cat.label;
+    const desc = (currentLang === 'en' && p.desc_en) ? p.desc_en : p.desc;
     const card = document.createElement('div');
     card.className = 'card';
     let mediaHtml;
@@ -206,18 +268,18 @@ function render(filter){
       <div class="card-top" style="background:${cat.color}1A;">${mediaHtml}</div>
       <div class="card-body">
         <p class="card-title serif">${p.name}</p>
-        <span class="cat-badge" style="background:${cat.color}1A; color:${cat.color};">${cat.label}</span>
-        <p class="desc">${p.desc}</p>
+        <span class="cat-badge" style="background:${cat.color}1A; color:${cat.color};">${catLabel}</span>
+        <p class="desc">${desc}</p>
         <div class="actions">
-          ${p.website ? `<a class="btn" href="${p.website}" target="_blank" rel="noopener">🌐 Website</a>` : ''}
-          ${p.mapsId ? `<a class="btn primary" href="${mapsUrl(p)}" target="_blank" rel="noopener">📍 Google Maps</a>` : ''}
+          ${p.website ? `<a class="btn" href="${p.website}" target="_blank" rel="noopener">${t.website}</a>` : ''}
+          ${p.mapsId ? `<a class="btn primary" href="${mapsUrl(p)}" target="_blank" rel="noopener">${t.maps}</a>` : ''}
           ${p.phone ? `<a class="btn phone" href="tel:${p.phone.replace(/\s/g,'')}">📞 ${p.phone}</a>` : ''}
           ${p.facebook
             ? `<a class="btn social facebook" href="${p.facebook}" target="_blank" rel="noopener" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>`
-            : `<span class="btn social inactive" title="Fără pagină Facebook"><i class="fa-brands fa-facebook-f"></i></span>`}
+            : `<span class="btn social inactive" title="Facebook"><i class="fa-brands fa-facebook-f"></i></span>`}
           ${p.instagram
             ? `<a class="btn social instagram" href="${p.instagram}" target="_blank" rel="noopener" title="Instagram"><i class="fa-brands fa-instagram"></i></a>`
-            : `<span class="btn social inactive" title="Fără cont Instagram"><i class="fa-brands fa-instagram"></i></span>`}
+            : `<span class="btn social inactive" title="Instagram"><i class="fa-brands fa-instagram"></i></span>`}
         </div>
       </div>
     `;
@@ -226,12 +288,14 @@ function render(filter){
 }
 
 function renderFilters(){
+  const t = I18N[currentLang];
   const nav = document.getElementById('filters');
+  nav.innerHTML = '';
   const cats = ['toate', ...Object.keys(CATS)];
   cats.forEach(key => {
     const btn = document.createElement('button');
-    btn.className = 'chip' + (key === 'toate' ? ' active' : '');
-    btn.textContent = key === 'toate' ? 'Toate' : CATS[key].label;
+    btn.className = 'chip' + (key === currentFilter ? ' active' : '');
+    btn.textContent = key === 'toate' ? t.all : (currentLang === 'en' ? CATS[key].label_en : CATS[key].label);
     btn.onclick = () => {
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
       btn.classList.add('active');
@@ -241,6 +305,7 @@ function renderFilters(){
   });
 }
 
+setLang('ro');
 loadPlaces();
 </script>
 </body>
