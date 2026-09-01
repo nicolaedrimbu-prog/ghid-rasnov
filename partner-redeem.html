@@ -38,6 +38,21 @@
   #reader{width:100%; height:100%;}
   #reader video{object-fit:cover !important;}
 
+  /* ---------- Manual entry (comenzi online) ---------- */
+  .manual-divider{display:flex; align-items:center; gap:10px; margin:20px 0; color:var(--ink-soft); font-size:12px;}
+  .manual-divider::before, .manual-divider::after{content:''; flex:1; height:1px; background:var(--line);}
+  .manual-box{background:#fff; border:1.5px solid var(--line); border-radius:16px; padding:16px;}
+  .manual-label{font-size:13px; font-weight:700; color:var(--teal-deep); margin-bottom:4px;}
+  .manual-sub{font-size:12px; color:var(--ink-soft); margin-bottom:10px;}
+  .manual-row{display:flex; gap:8px;}
+  #manual-code{flex:1; border:1.5px solid var(--line); border-radius:12px; padding:12px 14px;
+    font-family:'JetBrains Mono', monospace; font-size:16px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--ink); min-width:0;}
+  #manual-code:focus{outline:none; border-color:var(--teal);}
+  .btn-manual{flex-shrink:0; border:none; border-radius:12px; padding:0 18px; background:var(--teal-deep);
+    color:#fff; font-weight:700; font-size:14px; cursor:pointer;}
+  .manual-error{font-size:12px; color:var(--brick); margin-top:8px; min-height:16px;}
+
   /* ---------- Result stage ---------- */
   #result-stage{opacity:0; max-height:0; overflow:hidden; transition:opacity .3s ease .1s, max-height .3s ease;}
   #result-stage.visible{opacity:1; max-height:800px;}
@@ -50,6 +65,10 @@
   .confirm-row:last-of-type{border-bottom:none;}
   .confirm-row span{color:var(--ink-soft);}
   .confirm-row b{color:var(--teal-deep); font-family:'JetBrains Mono', monospace; font-size:16px; letter-spacing:1px;}
+  .source-badge{display:inline-block; font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px;
+    margin-top:4px;}
+  .source-badge.scan{background:var(--gold-soft); color:#7A5518;}
+  .source-badge.manual{background:#DCE7EB; color:#2E5A6B;}
 
   .btn-confirm{width:100%; margin-top:18px; padding:16px; border:none; border-radius:14px;
     background:var(--teal-deep); color:#fff; font-size:16px; font-weight:700; cursor:pointer;
@@ -89,11 +108,23 @@
 
 <main>
   <div class="biz-name" id="biz-name">Se încarcă<span class="loading-dots"></span></div>
-  <div class="biz-sub">Scanează codul QR al oaspetelui pentru a confirma beneficiul.</div>
+  <div class="biz-sub">Scanați codul QR al oaspetelui, sau introduceți-l manual pentru comenzi online.</div>
 
   <div id="scan-stage">
     <div class="scan-frame"><div id="reader"></div></div>
     <p class="scan-hint">Îndreaptă camera spre codul QR arătat de oaspete</p>
+
+    <div class="manual-divider">SAU</div>
+
+    <div class="manual-box">
+      <div class="manual-label">Comandă online?</div>
+      <div class="manual-sub">Dacă oaspetele v-a trimis codul în comandă (nu poate fi scanat), introduceți-l aici.</div>
+      <div class="manual-row">
+        <input type="text" id="manual-code" placeholder="ex. A7K9QZ" maxlength="6" autocomplete="off" autocapitalize="characters">
+        <button class="btn-manual" id="manual-submit">Verifică</button>
+      </div>
+      <div class="manual-error" id="manual-error"></div>
+    </div>
   </div>
 
   <div id="result-stage">
@@ -101,6 +132,7 @@
       <div class="confirm-icon">🎁</div>
       <div class="confirm-row"><span>Apartament</span><b id="result-apt">—</b></div>
       <div class="confirm-row"><span>Cod</span><b id="result-code">—</b></div>
+      <div class="confirm-row"><span>Sursă</span><span id="result-source"></span></div>
       <button class="btn-confirm" id="confirm-btn">✓ Confirmă acordarea beneficiului</button>
       <button class="btn-again" onclick="resetToScan()">Anulează, scanează alt cod</button>
     </div>
@@ -112,7 +144,7 @@
       <p class="outcome-title" id="outcome-title">—</p>
       <p class="outcome-sub" id="outcome-sub">—</p>
     </div>
-    <button class="btn-confirm" style="margin-top:14px;" onclick="resetToScan()">Scanează alt cod</button>
+    <button class="btn-confirm" style="margin-top:14px;" onclick="resetToScan()">Scanează / verifică alt cod</button>
   </div>
 </main>
 
@@ -164,36 +196,67 @@ function showOutcome(ok, title, sub) {
 }
 
 let currentGuestCode = null;
+let currentSource = 'scan'; // 'scan' sau 'manual'
 
-async function handleScannedCode(decodedText) {
-  if (currentGuestCode) return; // evită scanări multiple în paralel
-  const code = decodedText.trim().toUpperCase();
+async function lookupCode(rawCode, source) {
+  const code = rawCode.trim().toUpperCase();
+  if (!code) return;
+  if (currentGuestCode) return; // evită dublă procesare
 
-  await stopScanner();
+  if (source === 'scan') {
+    await stopScanner();
+  }
 
   const res = await sbFetch(`guest_codes?code=eq.${encodeURIComponent(code)}&select=*`);
   const rows = await res.json();
 
   if (!rows || rows.length === 0) {
+    if (source === 'manual') {
+      document.getElementById('manual-error').textContent = 'Cod invalid — verifică dacă a fost introdus corect.';
+      return;
+    }
     showOutcome(false, 'Cod invalid', 'Nu există în sistem — verifică dacă a fost tastat/scanat corect.');
     return;
   }
   const gc = rows[0];
 
   if (new Date(gc.valid_until) < new Date()) {
+    if (source === 'manual') {
+      document.getElementById('manual-error').textContent = 'Acest cod a expirat.';
+      return;
+    }
     showOutcome(false, 'Cod expirat', 'Acest cod nu mai este valabil.');
     return;
   }
   if (gc.scope_business_id && gc.scope_business_id !== businessId) {
-    showOutcome(false, 'Cod pentru altă afacere', 'Acest cod e valabil doar la un alt partener.');
+    const msg = 'Acest cod e valabil doar la un alt partener.';
+    if (source === 'manual') { document.getElementById('manual-error').textContent = msg; return; }
+    showOutcome(false, 'Cod pentru altă afacere', msg);
     return;
   }
 
   currentGuestCode = gc;
+  currentSource = source;
   document.getElementById('result-apt').textContent = gc.apt_name;
   document.getElementById('result-code').textContent = gc.code;
+  const sourceEl = document.getElementById('result-source');
+  sourceEl.innerHTML = source === 'manual'
+    ? '<span class="source-badge manual">✍️ introdus manual</span>'
+    : '<span class="source-badge scan">📷 scanat</span>';
   showStage('result');
 }
+
+function handleScannedCode(decodedText) {
+  lookupCode(decodedText, 'scan');
+}
+
+document.getElementById('manual-submit').addEventListener('click', () => {
+  document.getElementById('manual-error').textContent = '';
+  lookupCode(document.getElementById('manual-code').value, 'manual');
+});
+document.getElementById('manual-code').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('manual-submit').click();
+});
 
 document.getElementById('confirm-btn').addEventListener('click', async () => {
   if (!currentGuestCode) return;
@@ -203,7 +266,7 @@ document.getElementById('confirm-btn').addEventListener('click', async () => {
 
   const res = await sbFetch('redemptions', {
     method: 'POST',
-    body: JSON.stringify({ code_id: currentGuestCode.id, business_id: businessId }),
+    body: JSON.stringify({ code_id: currentGuestCode.id, business_id: businessId, source: currentSource }),
   });
 
   if (res.status === 201) {
@@ -219,6 +282,8 @@ document.getElementById('confirm-btn').addEventListener('click', async () => {
 
 function resetToScan() {
   currentGuestCode = null;
+  document.getElementById('manual-code').value = '';
+  document.getElementById('manual-error').textContent = '';
   showStage('scan');
   startScanner();
 }
@@ -237,9 +302,7 @@ function startScanner() {
     { fps: 10, qrbox: { width: 220, height: 220 } },
     (decodedText) => handleScannedCode(decodedText),
     () => {}
-  ).catch(() => {
-    document.getElementById('scan-hint');
-  });
+  ).catch(() => {});
 }
 
 loadBusinessName();
