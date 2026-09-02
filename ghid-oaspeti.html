@@ -110,6 +110,9 @@ const APT_NAMES = {
   ap5:    { name: 'Apartamentul 5 — Beautiful views near the Fortress', zona: 'rasnov', telefon: '40751090407' },
   ap12:   { name: 'Apartamentul 12 — Peaceful and inviting', zona: 'rasnov', telefon: '40751090407' },
   sacele: { name: 'Family House with mountain views', zona: 'sacele-brasov', telefon: '40721372770' },
+  ap6:    { name: 'Apartamentul 6 — The Nest Beneath the Citadel', zona: 'rasnov', telefon: '40751090407' },
+  ap8:    { name: 'Apartamentul 8 — Hillside Haven', zona: 'rasnov', telefon: '40751090407' },
+  ap9:    { name: 'Apartamentul 9 — Alpine Eden Hideaway', zona: 'rasnov', telefon: '40751090407' },
   'demo-predeal':  { name: 'Demo — Ghid Lokal Predeal-Azuga', zona: 'predeal-azuga', telefon: '40751090407' },
   'demo-sinaia':   { name: 'Demo — Ghid Lokal Sinaia-Bușteni', zona: 'sinaia-busteni-poiana-tapului', telefon: '40751090407' },
   'demo-bran':     { name: 'Demo — Ghid Lokal Bran-Moieciu', zona: 'bran-moieciu-fundata', telefon: '40751090407' },
@@ -123,38 +126,10 @@ const APT_NAMES = {
 let currentApt = APT_NAMES[apt];
 let currentZona = currentApt ? currentApt.zona : 'rasnov'; // implicit Râșnov, pt link-uri vechi
 
-function formatPhoneRo(raw) {
-  const digits = (raw || '').replace(/\D/g, '');
-  if (digits.startsWith('40')) return digits;
-  if (digits.startsWith('0')) return '40' + digits.slice(1);
-  return digits || '40751090407';
-}
-
-async function resolveOperator() {
-  if (currentApt || !apt) return;
-  try {
-    const res = await sbFetch(`operatori?slug=eq.${encodeURIComponent(apt)}&select=*`);
-    const rows = await res.json();
-    if (rows && rows.length > 0) {
-      const op = rows[0];
-      currentApt = { name: op.nume_afisat || op.nume_afacere, zona: op.zona || 'rasnov', telefon: formatPhoneRo(op.telefon) };
-      currentZona = currentApt.zona;
-    }
-  } catch (e) { /* ramane fallback pe Rasnov, fara nume personalizat */ }
-}
-}
-
-// ---------- Sistem de coduri pentru beneficii ----------
+// ---------- Supabase (coduri beneficii + operatori auto-inscrisi) ----------
 const SUPABASE_URL = "https://mwtodfcwuwzgnkohxpwi.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_5I9zz5OjPkB7yuew0cWBVA_mmmxSjhf";
 const CODE_STORAGE_KEY = `lokal_guest_code_${apt}`;
-
-function randomCode(len = 6) {
-  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // fără 0/O/1/I, evită confuzii
-  let out = "";
-  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
-}
 
 async function sbFetch(path, options = {}) {
   return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -166,6 +141,33 @@ async function sbFetch(path, options = {}) {
       ...(options.headers || {}),
     },
   });
+}
+
+function formatPhoneRo(raw) {
+  const digits = (raw || '').replace(/\D/g, '');
+  if (digits.startsWith('40')) return digits;
+  if (digits.startsWith('0')) return '40' + digits.slice(1);
+  return digits || '40751090407';
+}
+
+async function resolveOperator() {
+  if (currentApt || !apt || apt === 'general') return; // deja cunoscut static, sau fara ?apt=
+  try {
+    const res = await sbFetch(`operatori?slug=eq.${encodeURIComponent(apt)}&select=*`);
+    const rows = await res.json();
+    if (rows && rows.length > 0) {
+      const op = rows[0];
+      currentApt = { name: op.nume_afisat || op.nume_afacere, zona: op.zona || 'rasnov', telefon: formatPhoneRo(op.telefon) };
+      currentZona = currentApt.zona;
+    }
+  } catch (e) { /* ramane fallback pe Rasnov, fara nume personalizat */ }
+}
+
+function randomCode(len = 6) {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // fără 0/O/1/I, evită confuzii
+  let out = "";
+  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
 }
 
 function renderCodeQR(code) {
@@ -441,7 +443,7 @@ function renderFilters(){
 }
 
 async function init() {
-  await resolveOperator();currentApt = { name: op.nume_afisat || op.nume_afacere, zona: op.zona || 'rasnov', telefon: formatPhoneRo(op.telefon) };
+  await resolveOperator();
   setLang('ro');
   loadPlaces();
 }
