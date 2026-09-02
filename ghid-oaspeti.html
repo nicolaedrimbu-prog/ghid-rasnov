@@ -440,7 +440,7 @@ function renderFilters(){
 }
 
 async function init() {
-  await resolveOperator();
+  await resolveOperator();currentApt = { name: op.nume_afisat || op.nume_afacere, zona: op.zona || 'rasnov', telefon: formatPhoneRo(op.telefon) };
   setLang('ro');
   loadPlaces();
 }
