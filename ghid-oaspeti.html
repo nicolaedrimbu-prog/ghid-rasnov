@@ -131,16 +131,17 @@ function formatPhoneRo(raw) {
 }
 
 async function resolveOperator() {
-  if (currentApt || !apt) return; // deja cunoscut static, sau fara ?apt=
+  if (currentApt || !apt) return;
   try {
     const res = await sbFetch(`operatori?slug=eq.${encodeURIComponent(apt)}&select=*`);
     const rows = await res.json();
     if (rows && rows.length > 0) {
       const op = rows[0];
-      currentApt = { name: op.nume_afacere, zona: op.zona || 'rasnov', telefon: formatPhoneRo(op.telefon) };
+      currentApt = { name: op.nume_afisat || op.nume_afacere, zona: op.zona || 'rasnov', telefon: formatPhoneRo(op.telefon) };
       currentZona = currentApt.zona;
     }
   } catch (e) { /* ramane fallback pe Rasnov, fara nume personalizat */ }
+}
 }
 
 // ---------- Sistem de coduri pentru beneficii ----------
