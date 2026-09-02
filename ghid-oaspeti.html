@@ -120,8 +120,28 @@ const APT_NAMES = {
   'demo-vama':     { name: 'Demo — Ghid Lokal Vama Buzăului', zona: 'vama-buzaului-intorsura-buzaului', telefon: '40751090407' },
 };
 
-const currentApt = APT_NAMES[apt];
-const currentZona = currentApt ? currentApt.zona : 'rasnov'; // implicit Râșnov, pt link-uri vechi
+let currentApt = APT_NAMES[apt];
+let currentZona = currentApt ? currentApt.zona : 'rasnov'; // implicit Râșnov, pt link-uri vechi
+
+function formatPhoneRo(raw) {
+  const digits = (raw || '').replace(/\D/g, '');
+  if (digits.startsWith('40')) return digits;
+  if (digits.startsWith('0')) return '40' + digits.slice(1);
+  return digits || '40751090407';
+}
+
+async function resolveOperator() {
+  if (currentApt || !apt) return; // deja cunoscut static, sau fara ?apt=
+  try {
+    const res = await sbFetch(`operatori?slug=eq.${encodeURIComponent(apt)}&select=*`);
+    const rows = await res.json();
+    if (rows && rows.length > 0) {
+      const op = rows[0];
+      currentApt = { name: op.nume_afacere, zona: op.zona || 'rasnov', telefon: formatPhoneRo(op.telefon) };
+      currentZona = currentApt.zona;
+    }
+  } catch (e) { /* ramane fallback pe Rasnov, fara nume personalizat */ }
+}
 
 // ---------- Sistem de coduri pentru beneficii ----------
 const SUPABASE_URL = "https://mwtodfcwuwzgnkohxpwi.supabase.co";
@@ -419,8 +439,12 @@ function renderFilters(){
   });
 }
 
-setLang('ro');
-loadPlaces();
+async function init() {
+  await resolveOperator();
+  setLang('ro');
+  loadPlaces();
+}
+init();
 </script>
 </body>
 </html>
